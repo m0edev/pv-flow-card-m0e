@@ -1,12 +1,16 @@
 /**
- * goodwe-flow-card-m0e
+ * PV Flow Card (m0e)
  *
- * A custom Home Assistant Lovelace card for GoodWe hybrid inverters.
- * Animated energy flow (solar / battery / home / grid), battery SOC ring,
- * PV string bars, daily stats and quick-toggle switches (e.g. Fast Charge).
+ * A custom Home Assistant Lovelace card for any solar / battery / hybrid
+ * inverter system — works with whatever integration provides the sensors
+ * (GoodWe, Victron, SolarEdge, Fronius, Sungrow, ESPHome meters, ...).
+ * Animated energy flow (solar / battery / home / grid), SOC and power
+ * rings, stat tiles, info rows, preset buttons, timers and toggles.
  *
  * No build step, no dependencies. Serve this single file as a Lovelace
- * resource (type: module) and use `type: custom:goodwe-flow-card-m0e`.
+ * resource (type: module) and use `type: custom:pv-flow-card-m0e`.
+ * The original `custom:goodwe-flow-card-m0e` type is kept registered as
+ * an alias, so configs written against it keep working.
  *
  * Config is documented in README.md. Legacy b2500d-card entity keys
  * (solar_power, p1_power, output_power, battery_percentage,
@@ -14,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.19.2";
+const CARD_VERSION = "1.20.0";
 const FLOW_THRESHOLD_W = 25; // flows below this are treated as zero
 
 /* ---------------------------------------------------------------- helpers */
@@ -151,7 +155,7 @@ const icon = (name, cls = "", style = "") =>
 
 /* ------------------------------------------------------------------- card */
 
-class GoodweFlowCard extends HTMLElement {
+class PvFlowCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -164,7 +168,7 @@ class GoodweFlowCard extends HTMLElement {
 
   setConfig(config) {
     if (!config || (!config.entities && !config.strings && !config.bars)) {
-      throw new Error("goodwe-flow-card-m0e: define an `entities:` block");
+      throw new Error("pv-flow-card-m0e: define an `entities:` block");
     }
     const e = config.entities || {};
 
@@ -187,7 +191,7 @@ class GoodweFlowCard extends HTMLElement {
     }
 
     this._config = {
-      name: config.name || "GoodWe",
+      name: config.name || "PV Flow",
       pv_power: e.pv_power || e.solar_power,
       house_power: e.house_power || e.output_power,
       grid_power: e.grid_power,
@@ -272,7 +276,7 @@ class GoodweFlowCard extends HTMLElement {
   static getStubConfig(_hass, entities) {
     const pick = (suffix) => entities.find((id) => id.endsWith(suffix)) || "";
     return {
-      name: "GoodWe",
+      name: "PV Flow",
       entities: {
         pv_power: pick("pv_power"),
         house_power: pick("house_consumption"),
@@ -1195,16 +1199,20 @@ class GoodweFlowCard extends HTMLElement {
   }
 }
 
-customElements.define("goodwe-flow-card-m0e", GoodweFlowCard);
+customElements.define("pv-flow-card-m0e", PvFlowCard);
+
+// legacy alias — configs written against the original name keep working
+class PvFlowCardLegacy extends PvFlowCard {}
+customElements.define("goodwe-flow-card-m0e", PvFlowCardLegacy);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "goodwe-flow-card-m0e",
-  name: "GoodWe Flow Card",
-  description: "Animated energy-flow card for GoodWe hybrid inverters (solar, battery, home, grid).",
+  type: "pv-flow-card-m0e",
+  name: "PV Flow Card (m0e)",
+  description: "Animated energy-flow card for solar/battery systems — live flows, SOC ring, stat tiles, prices, timers and controls. Works with any integration's sensors.",
   preview: true,
 });
 
-console.info(`%c GOODWE-FLOW-CARD-M0E %c v${CARD_VERSION} `,
+console.info(`%c PV-FLOW-CARD-M0E %c v${CARD_VERSION} `,
   "background:#35d49a;color:#000;font-weight:700;border-radius:3px 0 0 3px;padding:2px 0",
   "background:#222;color:#35d49a;border-radius:0 3px 3px 0;padding:2px 0");

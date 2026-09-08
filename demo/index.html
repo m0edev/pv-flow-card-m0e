@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GoodWe Flow Card — preview</title>
+  <title>PV Flow Card — preview</title>
   <style>
     :root { color-scheme: dark; }
     body {
@@ -23,7 +23,7 @@
   </style>
 </head>
 <body>
-  <h1>GoodWe Flow Card</h1>
+  <h1>PV Flow Card</h1>
   <div class="scenarios" id="scenarios"></div>
   <div class="wrap" id="mount"></div>
   <p class="note">Browser preview with mocked Home Assistant data — values jitter every 2 s.
@@ -117,9 +117,9 @@
     };
 
     // ---- card ---------------------------------------------------------
-    const card = document.createElement("goodwe-flow-card-m0e");
+    const card = document.createElement("pv-flow-card-m0e");
     card.setConfig({
-      type: "custom:goodwe-flow-card-m0e",
+      type: "custom:pv-flow-card-m0e",
       name: "SYMBOX",
       battery_capacity_kwh: 1.6,
       pv_max: 6600,
