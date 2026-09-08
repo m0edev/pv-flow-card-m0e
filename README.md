@@ -37,13 +37,13 @@ evening, night import, fast charge).
 
 ### Manual
 
-1. Copy `dist/goodwe-flow-card-m0e.js` into your HA `config/www/` folder.
+1. Copy `dist/pv-flow-card-m0e.js` into your HA `config/www/` folder.
 2. Settings → Dashboards → ⋮ → **Resources** → Add →
-   URL `/local/goodwe-flow-card-m0e.js`, type **JavaScript module**.
+   URL `/local/pv-flow-card-m0e.js`, type **JavaScript module**.
 
-> The file keeps its original name for compatibility with existing installs.
-> The card type is `custom:pv-flow-card-m0e`; the original
-> `custom:goodwe-flow-card-m0e` still works as an alias.
+> The card type is `custom:pv-flow-card-m0e`. The original
+> `custom:goodwe-flow-card-m0e` type still works as a permanent alias, so
+> configs from the earlier GoodWe-branded versions run unchanged.
 
 ---
 
