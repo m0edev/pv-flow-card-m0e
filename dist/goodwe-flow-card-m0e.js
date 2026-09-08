@@ -14,7 +14,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.18.0";
+const CARD_VERSION = "1.18.1";
 const FLOW_THRESHOLD_W = 25; // flows below this are treated as zero
 
 /* ---------------------------------------------------------------- helpers */
@@ -389,11 +389,11 @@ class GoodweFlowCard extends HTMLElement {
           </div>
           <div class="stat-lbls">
             <span class="stat-label">${t.sub ?? "Now"}</span>
-            <span class="stat-label">${t.name2 ?? ""}</span>
+            <span class="stat-label e2t" data-e2="${t.entity2}">${t.name2 ?? ""}</span>
           </div>
           <div class="stat-vals">
             <span class="stat-val" id="ctile${i}">—</span>
-            <span class="stat-val v2" id="ctile2${i}">—</span>
+            <span class="stat-val v2 e2t" data-e2="${t.entity2}" id="ctile2${i}">—</span>
           </div>
         </div>` : `
         <div class="stat" data-entity="${t.entity}">
@@ -844,6 +844,14 @@ class GoodweFlowCard extends HTMLElement {
     // node + tile taps → more-info
     this.shadowRoot.querySelectorAll(".node, .stat, .string, .irow, .tmr-tile").forEach((el) => {
       el.addEventListener("click", () => this._moreInfo(el.dataset.entity));
+    });
+
+    // second-entity zones on two-entity tiles open entity2's more-info
+    this.shadowRoot.querySelectorAll(".e2t").forEach((el) => {
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        this._moreInfo(el.dataset.e2);
+      });
     });
 
     // preset button taps → set the group entity to the option's value
