@@ -14,7 +14,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.19.1";
+const CARD_VERSION = "1.19.2";
 const FLOW_THRESHOLD_W = 25; // flows below this are treated as zero
 
 /* ---------------------------------------------------------------- helpers */
@@ -70,15 +70,8 @@ const energyHtml = (v, unit) => {
 const fmtPrice = (v, unit) => {
   if (v === null) return "";
   const denom = unit.includes("/") ? unit.slice(unit.indexOf("/")) : "";
-  if (unit.includes("$") || /^[A-Z]{3}(\/|$)/.test(unit)) {
-    const a = Math.abs(v);
-    // sub-10¢ rates (Amber feed-in territory) lose everything to 2dp
-    // dollars — show them as cents with one decimal instead
-    if (denom && a > 0 && a < 0.095) {
-      return `${(v * 100).toFixed(1).replace(/\.0$/, "")}¢${denom}`;
-    }
-    return `${v < 0 ? "-" : ""}$${a.toFixed(2)}${denom}`;
-  }
+  if (unit.includes("$") || /^[A-Z]{3}(\/|$)/.test(unit))
+    return `${v < 0 ? "-" : ""}$${Math.abs(v).toFixed(2)}${denom}`;
   if (/¢|c\//i.test(unit)) return `${Math.round(v)}¢${denom || "/kWh"}`;
   return `${v} ${unit}`;
 };
