@@ -14,7 +14,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.18.1";
+const CARD_VERSION = "1.19.0";
 const FLOW_THRESHOLD_W = 25; // flows below this are treated as zero
 
 /* ---------------------------------------------------------------- helpers */
@@ -375,13 +375,10 @@ class GoodweFlowCard extends HTMLElement {
           <span class="stat-val" id="${valId}">—</span>
         </div>`;
     const L = c.labels;
-    const statsHtml = c.show_stats ? `
-      <div class="stats" style="grid-template-columns: repeat(${c.tile_columns}, minmax(0, 1fr))">
-        ${c.production_today ? tile(c.production_today, L.production, L.today, "prodToday", "chart", "solar") : ""}
-        ${c.battery_today ? tile(c.battery_today, L.battery_today, L.today, "battToday", "battery", "batt") : ""}
-        ${c.grid_import_today ? tile(c.grid_import_today, L.grid_in, L.today, "gridInToday", "grid", "grid") : ""}
-        ${c.grid_export_today ? tile(c.grid_export_today, L.grid_out, L.today, "gridOutToday", "grid", "grid") : ""}
-        ${c.tiles.map((t, i) => t.entity2 ? `
+    // a `- section: Title` entry in tiles: renders a header and starts a new
+    // grid (optionally with its own `columns:`); tiles before any section
+    // share the first grid with the built-in daily tiles, as before
+    const customTile = (t, i) => t.entity2 ? `
         <div class="stat two" data-entity="${t.entity}">
           <div class="stat-tr">
             <span class="stat-title">${t.name || t.entity}</span>
@@ -403,8 +400,30 @@ class GoodweFlowCard extends HTMLElement {
           </div>
           <span class="stat-label">${t.sub ?? "Now"}</span>
           <span class="stat-val" id="ctile${i}">—</span>
-        </div>`).join("")}
-      </div>` : "";
+        </div>`;
+
+    let statsHtml = "";
+    if (c.show_stats) {
+      const openGrid = (cols) =>
+        `<div class="stats" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr))">`;
+      let inGrid = true;
+      statsHtml = openGrid(c.tile_columns)
+        + (c.production_today ? tile(c.production_today, L.production, L.today, "prodToday", "chart", "solar") : "")
+        + (c.battery_today ? tile(c.battery_today, L.battery_today, L.today, "battToday", "battery", "batt") : "")
+        + (c.grid_import_today ? tile(c.grid_import_today, L.grid_in, L.today, "gridInToday", "grid", "grid") : "")
+        + (c.grid_export_today ? tile(c.grid_export_today, L.grid_out, L.today, "gridOutToday", "grid", "grid") : "");
+      c.tiles.forEach((t, i) => {
+        if (t.section !== undefined) {
+          if (inGrid) { statsHtml += "</div>"; inGrid = false; }
+          statsHtml += `<div class="info-title">${t.section}</div>`;
+          statsHtml += openGrid(Math.min(4, Math.max(1, num(t.columns) ?? c.tile_columns)));
+          inGrid = true;
+          return;
+        }
+        statsHtml += customTile(t, i);
+      });
+      if (inGrid) statsHtml += "</div>";
+    }
 
     // in a multi-column info grid, the cells on the last visual row drop
     // their bottom border (:last-child alone only covers one column)
