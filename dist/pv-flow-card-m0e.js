@@ -18,8 +18,8 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.21.0";
-const FLOW_THRESHOLD_W = 25; // flows below this are treated as zero
+const CARD_VERSION = "1.21.1";
+const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
 
@@ -251,6 +251,7 @@ class PvFlowCard extends HTMLElement {
       show_separator: config.show_separator !== false,
       layout: ["tall", "wide", "auto"].includes(config.layout) ? config.layout : "auto",
       low_fx: !!config.low_fx,
+      flow_threshold: Math.max(0, num(config.flow_threshold) ?? FLOW_THRESHOLD_W),
       info_title: config.info_title || "",
     };
     this._built = false;
@@ -970,7 +971,7 @@ class PvFlowCard extends HTMLElement {
     const dot = this.shadowRoot.getElementById(`dot-${name}`);
     const path = this.shadowRoot.getElementById(`p-${name}`);
     if (!dot) return;
-    const active = watts >= FLOW_THRESHOLD_W;
+    const active = watts >= this._config.flow_threshold;
     dot.classList.toggle("live", active);
     const src = name.split("-")[0];
     path.classList.toggle(`on-${src === "solar" ? "solar" : src === "batt" ? "batt" : "grid"}`, active);
@@ -1023,8 +1024,9 @@ class PvFlowCard extends HTMLElement {
     // node values
     r.pvVal.innerHTML = c.pv_power ? powerHtml(this._num(c.pv_power)) : "—";
     r.houseVal.innerHTML = c.house_power ? powerHtml(this._num(c.house_power)) : "—";
-    r.solarNode.classList.toggle("active-solar", pv >= FLOW_THRESHOLD_W);
-    r.houseNode.classList.toggle("active-house", house >= FLOW_THRESHOLD_W);
+    const TH = c.flow_threshold;
+    r.solarNode.classList.toggle("active-solar", pv >= TH);
+    r.houseNode.classList.toggle("active-house", house >= TH);
 
     // power rings (fraction of configured max)
     const RING_C = 238.76;
@@ -1033,10 +1035,10 @@ class PvFlowCard extends HTMLElement {
 
     // grid node
     const L = c.labels;
-    if (gridImport >= FLOW_THRESHOLD_W) {
+    if (gridImport >= TH) {
       r.gridVal.innerHTML = powerHtml(gridImport);
       r.gridLabel.textContent = `${L.grid} · ${L.grid_import}`;
-    } else if (gridExport >= FLOW_THRESHOLD_W) {
+    } else if (gridExport >= TH) {
       r.gridVal.innerHTML = powerHtml(gridExport);
       r.gridLabel.textContent = `${L.grid} · ${L.grid_export}`;
     } else {
@@ -1049,7 +1051,7 @@ class PvFlowCard extends HTMLElement {
         ? fmtPrice(num(priceSt.state), priceSt.attributes.unit_of_measurement || "")
         : "";
     }
-    r.gridNode.classList.toggle("active-grid", gridImport >= FLOW_THRESHOLD_W || gridExport >= FLOW_THRESHOLD_W);
+    r.gridNode.classList.toggle("active-grid", gridImport >= TH || gridExport >= TH);
 
     // battery node
     const soc = this._num(c.battery_soc);
@@ -1067,21 +1069,21 @@ class PvFlowCard extends HTMLElement {
     if (c.battery_capacity_kwh && soc !== null) {
       r.battKwh.textContent = `${((soc / 100) * c.battery_capacity_kwh).toFixed(2)} kWh`;
     }
-    const battActive = battCharge >= FLOW_THRESHOLD_W || battDischarge >= FLOW_THRESHOLD_W;
+    const battActive = battCharge >= TH || battDischarge >= TH;
     r.battNode.classList.toggle("active-batt", battActive);
-    r.battNode.classList.toggle("charging", battCharge >= FLOW_THRESHOLD_W);
+    r.battNode.classList.toggle("charging", battCharge >= TH);
     r.battLabel.textContent =
-      battCharge >= FLOW_THRESHOLD_W ? `${L.charging} · ${fmtPower(battCharge)}` :
-      battDischarge >= FLOW_THRESHOLD_W ? `${L.battery} · ${fmtPower(battDischarge)}` : L.battery;
+      battCharge >= TH ? `${L.charging} · ${fmtPower(battCharge)}` :
+      battDischarge >= TH ? `${L.battery} · ${fmtPower(battDischarge)}` : L.battery;
 
     // time-to-full / time-to-empty (needs battery_capacity_kwh)
     let eta = "";
     if (c.battery_capacity_kwh && soc !== null) {
       const capWh = c.battery_capacity_kwh * 1000;
-      if (battCharge >= FLOW_THRESHOLD_W && soc < 99.5) {
+      if (battCharge >= TH && soc < 99.5) {
         const t = fmtEta(((100 - soc) / 100) * capWh / battCharge);
         if (t) eta = `${L.full} ${t}`;
-      } else if (battDischarge >= FLOW_THRESHOLD_W && soc > c.battery_min_soc + 0.5) {
+      } else if (battDischarge >= TH && soc > c.battery_min_soc + 0.5) {
         const t = fmtEta(((soc - c.battery_min_soc) / 100) * capWh / battDischarge);
         if (t) eta = `${L.empty} ${t}`;
       }

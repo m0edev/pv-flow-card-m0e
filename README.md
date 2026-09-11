@@ -175,6 +175,7 @@ switches:
 | --- | --- | --- |
 | `name` | `PV Flow` | Card title |
 | `layout` | `auto` | `auto` = flow beside the tiles when the card is wider than ~620 px (landscape tablet), stacked when narrow. `wide` / `tall` force it |
+| `flow_threshold` | `25` | Watts below which a flow counts as zero — gates dot animation, node glows, import/export and charging labels. Raise it to hide meter-noise dribbles, lower it if tiny real flows matter |
 | `low_fx` | `false` | Drop glows, pulses and transitions for weak tablet GPUs; flow dots keep animating |
 | `battery_capacity_kwh` | — | Usable pack size. Enables the kWh readout in the SOC ring and the time-to-full / time-to-empty estimate |
 | `battery_min_soc` | `0` | Discharge floor (%); time-to-empty counts down to this |
