@@ -18,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.21.1";
+const CARD_VERSION = "1.22.0";
 const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
@@ -893,11 +893,26 @@ class PvFlowCard extends HTMLElement {
       });
     });
 
-    // switch taps → toggle
+    // switch taps → toggle (select entities flip between two options)
     this.shadowRoot.querySelectorAll(".switch").forEach((el) => {
       el.addEventListener("click", () => {
         const id = el.dataset.entity;
-        if (id && this._hass) this._hass.callService("homeassistant", "toggle", { entity_id: id });
+        if (!id || !this._hass) return;
+        const domain = id.split(".")[0];
+        if (domain === "select" || domain === "input_select") {
+          const s = this._config.switches.find((x) => x.entity === id) || {};
+          const st = this._hass.states[id];
+          const opts = (st && st.attributes && st.attributes.options) || [];
+          // resolve on/off against the entity's real option list so the
+          // service call carries the exact casing HA expects
+          const match = (v) => opts.find((o) => String(o).toLowerCase() === String(v).toLowerCase()) ?? String(v);
+          const onOpt = match(s.on_option ?? "on");
+          const offOpt = match(s.off_option ?? "off");
+          const isOn = !!st && st.state.toLowerCase() === String(onOpt).toLowerCase();
+          this._hass.callService(domain, "select_option", { entity_id: id, option: isOn ? offOpt : onOpt });
+        } else {
+          this._hass.callService("homeassistant", "toggle", { entity_id: id });
+        }
       });
     });
 
@@ -1195,8 +1210,9 @@ class PvFlowCard extends HTMLElement {
       const el = this.shadowRoot.getElementById(`sw${i}`);
       if (!el) return;
       const st = this._hass.states[s.entity];
+      const onState = String(s.on_option ?? "on").toLowerCase();
       el.classList.toggle("unavail", !st || st.state === "unavailable");
-      el.classList.toggle("on", !!st && st.state === "on");
+      el.classList.toggle("on", !!st && st.state.toLowerCase() === onState);
     });
   }
 }

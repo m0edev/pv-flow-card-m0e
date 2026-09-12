@@ -293,9 +293,18 @@ collapses to time-only when same-day).
 switches:
   - entity: switch.fast_charging     # switch, input_boolean or automation
     name: Fast Charge
+  - entity: select.solarcharger_mode # select / input_select work too
+    name: Solar Charger
+    on_option: "On"                  # optional — defaults to On / Off
+    off_option: "Off"                # (matched case-insensitively)
 ```
 
-Tap toggles via `homeassistant.toggle`. Legacy alias: `custom_settings`.
+Tap toggles via `homeassistant.toggle`. A `select` / `input_select` entity
+instead flips between two of its options via `select_option` — by default
+the options named `on` and `off` (matched case-insensitively against the
+entity's real option list), or set `on_option` / `off_option` for selects
+with other option names. The pill lights up while the state equals
+`on_option`. Legacy alias: `custom_settings`.
 
 ### `labels:` — every text on the card
 

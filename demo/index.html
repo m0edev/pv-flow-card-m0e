@@ -54,6 +54,7 @@
       timerEnd: "input_datetime.fast_charge_end",
       earned: "sensor.grid_earnings_today",
       spent: "sensor.grid_cost_today",
+      charger: "select.demo_solarcharger_mode",
     };
 
     const scenarios = {
@@ -65,6 +66,7 @@
     };
     let current = { ...scenarios["Sunny day"] };
     let fastOn = false;
+    let chargerOn = true;
     let prodToday = 16.0;
     let setpoint = 50;
     let timerOn = false;
@@ -101,12 +103,14 @@
       setState(E.spent, (1.17 + Math.random() * 0.01).toFixed(2), "$");
       setState(E.ts, new Date().toISOString());
       states[E.fast] = { state: fastOn ? "on" : "off", attributes: {} };
+      states[E.charger] = { state: chargerOn ? "ON" : "OFF", attributes: { options: ["ON", "OFF"] } };
     }
 
     const hass = {
       get states() { return states; },
       callService(domain, service, data) {
         if (service === "set_value") { setpoint = data.value; push(); return; }
+        if (service === "select_option") { chargerOn = String(data.option).toLowerCase() === "on"; push(); return; }
         if (data.entity_id === E.timerTog) { timerOn = !timerOn; push(); return; }
         if (data.entity_id === E.fast) {
           fastOn = !fastOn;
@@ -164,7 +168,10 @@
         start: E.timerStart,
         end: E.timerEnd,
       }],
-      switches: [{ entity: E.fast, name: "Fast Charge", icon: "mdi:battery-charging-100" }],
+      switches: [
+        { entity: E.fast, name: "Fast Charge", icon: "mdi:battery-charging-100" },
+        { entity: E.charger, name: "Solar Charger" },
+      ],
     });
     document.getElementById("mount").appendChild(card);
     card.addEventListener("hass-more-info", (e) => console.log("more-info:", e.detail.entityId));
