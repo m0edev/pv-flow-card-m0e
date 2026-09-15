@@ -18,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.22.0";
+const CARD_VERSION = "1.23.0";
 const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
@@ -325,12 +325,15 @@ class PvFlowCard extends HTMLElement {
   }
 
   // format any sensor state by its unit: %, W/kW, Wh/kWh, price, or raw
-  _fmtState(id) {
+  // precision (from a row/tile's `precision:` option) overrides the
+  // unit-based formatting with a plain fixed-decimal number + unit
+  _fmtState(id, precision) {
     const st = this._state(id);
     if (!st) return "—";
     const v = num(st.state);
     const unit = (st.attributes.unit_of_measurement || "").trim();
     if (v === null) return st.state;
+    if (precision != null) return `${v.toFixed(precision)}${unit ? `<span class="u">${unit}</span>` : ""}`;
     if (unit === "%") return `${Math.round(v)}<span class="u">%</span>`;
     if (unit === "W" || unit === "kW") return powerHtml(unit === "kW" ? v * 1000 : v);
     if (unit.includes("$") || unit.includes("¢") || /^[A-Z]{3}(\/|$)/.test(unit)) {
@@ -349,7 +352,7 @@ class PvFlowCard extends HTMLElement {
       const st = this._state(t.entity);
       return st ? fmtDT(st.state, t.format === "time") : "—";
     }
-    return this._fmtState(t.entity);
+    return this._fmtState(t.entity, num(t.precision));
   }
 
   _moreInfo(entityId) {
@@ -1129,7 +1132,7 @@ class PvFlowCard extends HTMLElement {
       if (!el) return;
       el.innerHTML = this._fmtByFormat(t);
       const el2 = this.shadowRoot.getElementById(`ctile2${i}`);
-      if (el2) el2.innerHTML = this._fmtState(t.entity2);
+      if (el2) el2.innerHTML = this._fmtState(t.entity2, num(t.precision2));
       const st = this._state(t.entity);
       el.parentElement.classList.toggle("flash", isAlert(t, st && st.state));
     });

@@ -230,16 +230,19 @@ tiles:
     icon: chart          # sun home battery grid chart bolt clock bell thermo
     color: "#ffb648"     # tints the icon
     format: duration     # optional: duration | datetime | time
+    precision: 2         # optional: show N decimals instead of unit formatting
     entity2: sensor.y    # second full-size value, right column
     name2: Label2        # label over the second value
+    precision2: 1        # optional decimals for entity2
     alert_states: [ALARM]   # flash red while state matches...
     ok_states: [OK]         # ...or while it does NOT match these
 ```
 
 Values auto-format by the sensor's unit: `W`/`kW`, `Wh`/`kWh`, `%`, prices
-(`$/kWh`, `¢/kWh`, plain `$`/currency codes), text states as-is. Tapping a
-tile opens the main entity's more-info; tapping the second value opens
-`entity2`'s.
+(`$/kWh`, `¢/kWh`, plain `$`/currency codes), text states as-is. `%` values
+round to whole numbers by default — set `precision:` to keep decimals
+(e.g. `0.60 %` instead of `1 %`). Tapping a tile opens the main entity's
+more-info; tapping the second value opens `entity2`'s.
 
 ### `info:` — compact label/value rows
 
@@ -250,6 +253,7 @@ info:
     icon: bolt           # optional small icon before the label
     color: "#35d49a"     # optional; tints icon and value
     format: duration     # duration | datetime | time
+    precision: 2         # optional: show N decimals instead of unit formatting
     ok_states: [OK]      # same alert flashing as tiles
 ```
 
