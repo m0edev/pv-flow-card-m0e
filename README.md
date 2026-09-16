@@ -100,6 +100,9 @@ entities:
   battery_soc: sensor.battery_soc
   grid_power: sensor.grid_power
   grid_price: sensor.electricity_price          # live $/kWh in the grid node
+  solar_extra: sensor.pv_generation_today       # small 2nd line inside a node's
+  home_extra: sensor.house_voltage              # circle; any entity, unit-aware
+  grid_extra: sensor.grid_frequency
   production_today: sensor.pv_generation_today  # built-in "Production" tile
   battery_today: sensor.battery_discharge_today # built-in "Battery" tile
   grid_import_today: sensor.grid_import_today   # built-in "Grid in" tile
@@ -198,6 +201,7 @@ switches:
 | `battery_soc` | State of charge (%). Legacy alias: `battery_percentage` |
 | `grid_power` | Grid power (W), + = exporting. Derived from the others if omitted |
 | `grid_price` | Live electricity price shown inside the grid node (`$/kWh` or `¢/kWh` sensors, e.g. Amber Electric) |
+| `solar_extra` / `home_extra` / `grid_extra` | Any entity, shown as a small second line inside that node's circle (unit-aware formatting). `grid_extra` renders below `grid_price` if both are set |
 | `production_today` | Daily PV energy → built-in "Production" tile |
 | `battery_today` | Daily battery energy → built-in "Battery" tile. Legacy alias: `battery_capacity` |
 | `grid_import_today` / `grid_export_today` | Daily grid energy → built-in tiles |

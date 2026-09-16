@@ -18,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.24.0";
+const CARD_VERSION = "1.25.0";
 const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
@@ -202,6 +202,11 @@ class PvFlowCard extends HTMLElement {
       grid_import_today: e.grid_import_today,
       grid_export_today: e.grid_export_today,
       grid_price: e.grid_price,
+      // optional extra entity shown as a small second line inside a node's
+      // circle (like grid_price on the grid node), unit-formatted
+      solar_extra: e.solar_extra,
+      home_extra: e.home_extra,
+      grid_extra: e.grid_extra,
       last_update: e.last_update,
       labels: {
         solar: "Solar",
@@ -268,6 +273,7 @@ class PvFlowCard extends HTMLElement {
     this._watched = [
       cc.pv_power, cc.house_power, cc.battery_power, cc.battery_soc,
       cc.grid_power, cc.grid_price, cc.production_today, cc.battery_today,
+      cc.solar_extra, cc.home_extra, cc.grid_extra,
       cc.grid_import_today, cc.grid_export_today, cc.last_update,
       ...cc.strings.map((s) => s.entity),
       ...cc.tiles.map((t) => t.entity),
@@ -841,6 +847,7 @@ class PvFlowCard extends HTMLElement {
                   stroke-dasharray="238.76" stroke-dashoffset="238.76"/>
               </svg>` : ""}
               ${icon("sun")}<span class="node-val" id="pvVal">—</span>
+              ${c.solar_extra ? `<span class="node-sub" id="pvExtra"></span>` : ""}
             </div>
           </div>
 
@@ -867,6 +874,7 @@ class PvFlowCard extends HTMLElement {
                   stroke-dasharray="238.76" stroke-dashoffset="238.76"/>
               </svg>` : ""}
               ${icon("home")}<span class="node-val" id="houseVal">—</span>
+              ${c.home_extra ? `<span class="node-sub" id="houseExtra"></span>` : ""}
             </div>
             <span class="node-label">${L.home}</span>
           </div>
@@ -876,6 +884,7 @@ class PvFlowCard extends HTMLElement {
               ${icon("grid")}
               <span class="node-val" id="gridVal">—</span>
               ${c.grid_price ? `<span class="node-sub" id="gridPrice"></span>` : ""}
+              ${c.grid_extra ? `<span class="node-sub" id="gridExtra"></span>` : ""}
             </div>
             <span class="node-label" id="gridLabel">${L.grid}</span>
           </div>
@@ -899,6 +908,7 @@ class PvFlowCard extends HTMLElement {
     this._refs = {
       updated: $("updated"),
       pvVal: $("pvVal"), houseVal: $("houseVal"), gridVal: $("gridVal"), gridPrice: $("gridPrice"),
+      pvExtra: $("pvExtra"), houseExtra: $("houseExtra"), gridExtra: $("gridExtra"),
       socVal: $("socVal"), socArc: $("socArc"), battKwh: $("battKwh"),
       pvArc: $("pvArc"), houseArc: $("houseArc"),
       battLabel: $("battLabel"), battEta: $("battEta"), gridLabel: $("gridLabel"),
@@ -1085,6 +1095,9 @@ class PvFlowCard extends HTMLElement {
     // node values
     r.pvVal.innerHTML = c.pv_power ? powerHtml(this._num(c.pv_power)) : "—";
     r.houseVal.innerHTML = c.house_power ? powerHtml(this._num(c.house_power)) : "—";
+    if (r.pvExtra) r.pvExtra.innerHTML = this._fmtState(c.solar_extra);
+    if (r.houseExtra) r.houseExtra.innerHTML = this._fmtState(c.home_extra);
+    if (r.gridExtra) r.gridExtra.innerHTML = this._fmtState(c.grid_extra);
     const TH = c.flow_threshold;
     r.solarNode.classList.toggle("active-solar", pv >= TH);
     r.houseNode.classList.toggle("active-house", house >= TH);
