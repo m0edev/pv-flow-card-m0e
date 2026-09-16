@@ -236,6 +236,7 @@ tiles:
     precision2: 1        # optional decimals for entity2
     alert_states: [ALARM]   # flash red while state matches...
     ok_states: [OK]         # ...or while it does NOT match these
+    span: 2              # optional: tile takes this many grid columns
 ```
 
 Values auto-format by the sensor's unit: `W`/`kW`, `Wh`/`kWh`, `%`, prices
@@ -243,6 +244,28 @@ Values auto-format by the sensor's unit: `W`/`kW`, `Wh`/`kWh`, `%`, prices
 round to whole numbers by default — set `precision:` to keep decimals
 (e.g. `0.60 %` instead of `1 %`). Tapping a tile opens the main entity's
 more-info; tapping the second value opens `entity2`'s.
+
+For more than two values, give a tile an `entities:` list instead of
+`entity`/`entity2` — one header, up to 4 labelled values (2 side by side,
+3 across, 4 as a 2×2). Each item takes its own `name`, `precision` and
+`format`, and taps to its own more-info. Pairs well with `span:` for a
+full-width tile:
+
+```yaml
+tiles:
+  - name: Savings
+    icon: sun
+    color: "#35d49a"
+    span: 2                # full width in a 2-column grid
+    entities:
+      - { entity: sensor.savings_today, name: Today }
+      - { entity: sensor.savings_yesterday, name: Yesterday }
+      - { entity: sensor.savings_monthly, name: Month }
+      - { entity: sensor.savings_yearly, name: Year }
+```
+
+`span:` works on any tile and is clamped to the section's column count.
+`alert_states` / `ok_states` on an `entities:` tile watch the first entity.
 
 ### `info:` — compact label/value rows
 

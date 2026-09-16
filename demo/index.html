@@ -54,6 +54,10 @@
       timerEnd: "input_datetime.fast_charge_end",
       earned: "sensor.grid_earnings_today",
       spent: "sensor.grid_cost_today",
+      savT: "sensor.demo_savings_today",
+      savY: "sensor.demo_savings_yesterday",
+      savM: "sensor.demo_savings_monthly",
+      savYr: "sensor.demo_savings_yearly",
       charger: "select.demo_solarcharger_mode",
     };
 
@@ -101,6 +105,10 @@
       setState(E.timerEnd, "2026-08-29 04:00:00", "");
       setState(E.earned, (3.42 + Math.random() * 0.02).toFixed(2), "$");
       setState(E.spent, (1.17 + Math.random() * 0.01).toFixed(2), "$");
+      setState(E.savT, (0.82 + Math.random() * 0.02).toFixed(2), "$");
+      setState(E.savY, "1.98", "$");
+      setState(E.savM, "21.67", "$");
+      setState(E.savYr, "121.66", "$");
       setState(E.ts, new Date().toISOString());
       states[E.fast] = { state: fastOn ? "on" : "off", attributes: {} };
       states[E.charger] = { state: chargerOn ? "ON" : "OFF", attributes: { options: ["ON", "OFF"] } };
@@ -146,6 +154,12 @@
         { section: "Money" },
         { entity: E.earned, name: "Sold", sub: "Today", icon: "grid", color: "#35d49a" },
         { entity: E.spent, name: "Bought", sub: "Today", icon: "grid", color: "#ff6b6b" },
+        { name: "Savings", icon: "sun", color: "#35d49a", span: 2, entities: [
+          { entity: E.savT, name: "Today" },
+          { entity: E.savY, name: "Yesterday" },
+          { entity: E.savM, name: "Month" },
+          { entity: E.savYr, name: "Year" },
+        ] },
       ],
       info_title: "System",
       info_columns: 2,

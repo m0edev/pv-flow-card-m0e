@@ -18,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.23.0";
+const CARD_VERSION = "1.24.0";
 const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
@@ -234,6 +234,11 @@ class PvFlowCard extends HTMLElement {
       switches: config.switches || config.custom_settings || [],
       tiles: (Array.isArray(config.tiles) ? config.tiles : []).map((t) => ({
         ...t, _alert: listify(t.alert_states), _ok: listify(t.ok_states),
+        // `entities:` list (up to 4, each {entity, name, precision, format})
+        // supersedes entity/entity2 when present
+        _ents: Array.isArray(t.entities) && t.entities.length
+          ? t.entities.slice(0, 4).map((e) => (typeof e === "object" ? { ...e } : { entity: e }))
+          : null,
       })),
       info: (Array.isArray(config.info) ? config.info : []).map((t) => ({
         ...t, _alert: listify(t.alert_states), _ok: listify(t.ok_states),
@@ -267,6 +272,7 @@ class PvFlowCard extends HTMLElement {
       ...cc.strings.map((s) => s.entity),
       ...cc.tiles.map((t) => t.entity),
       ...cc.tiles.map((t) => t.entity2),
+      ...cc.tiles.flatMap((t) => (t._ents || []).map((e) => e.entity)),
       ...cc.info.map((t) => t.entity),
       ...cc.switches.map((s) => s.entity),
       ...cc.buttons.map((g) => g.entity),
@@ -386,8 +392,32 @@ class PvFlowCard extends HTMLElement {
     // a `- section: Title` entry in tiles: renders a header and starts a new
     // grid (optionally with its own `columns:`); tiles before any section
     // share the first grid with the built-in daily tiles, as before
-    const customTile = (t, i) => t.entity2 ? `
-        <div class="stat two" data-entity="${t.entity}">
+    // `span:` lets a tile take several grid columns (clamped to the section's
+    // column count by the caller)
+    const customTile = (t, i, span) => {
+      const spanStyle = span > 1 ? ` style="grid-column: span ${span}"` : "";
+      // `entities:` list — one header, up to 4 labelled values in a sub-grid
+      // (2 side by side, 3 across, 4 as a 2×2); each value taps to its own
+      // more-info like entity2 does
+      if (t._ents) {
+        const cols = t._ents.length === 4 ? 2 : Math.max(1, t._ents.length);
+        return `
+        <div class="stat multi" data-entity="${t._ents[0].entity}"${spanStyle}>
+          <div class="stat-tr">
+            <span class="stat-title">${t.name || t._ents[0].entity}</span>
+            ${icon(t.icon || "bolt", "", t.color ? `color:${t.color}` : "")}
+          </div>
+          <div class="stat-grid cols-${cols}">
+            ${t._ents.map((e, j) => `
+            <div class="stat-cell${j ? " e2t" : ""}"${j ? ` data-e2="${e.entity}"` : ""}>
+              <span class="stat-label">${e.name ?? ""}</span>
+              <span class="stat-val" id="ctile${i}_${j}">—</span>
+            </div>`).join("")}
+          </div>
+        </div>`;
+      }
+      return t.entity2 ? `
+        <div class="stat two" data-entity="${t.entity}"${spanStyle}>
           <div class="stat-tr">
             <span class="stat-title">${t.name || t.entity}</span>
             ${icon(t.icon || "bolt", "", t.color ? `color:${t.color}` : "")}
@@ -401,7 +431,7 @@ class PvFlowCard extends HTMLElement {
             <span class="stat-val v2 e2t" data-e2="${t.entity2}" id="ctile2${i}">—</span>
           </div>
         </div>` : `
-        <div class="stat" data-entity="${t.entity}">
+        <div class="stat" data-entity="${t.entity}"${spanStyle}>
           <div class="stat-tr">
             <span class="stat-title">${t.name || t.entity}</span>
             ${icon(t.icon || "bolt", "", t.color ? `color:${t.color}` : "")}
@@ -409,12 +439,14 @@ class PvFlowCard extends HTMLElement {
           <span class="stat-label">${t.sub ?? "Now"}</span>
           <span class="stat-val" id="ctile${i}">—</span>
         </div>`;
+    };
 
     let statsHtml = "";
     if (c.show_stats) {
       const openGrid = (cols) =>
         `<div class="stats" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr))">`;
       let inGrid = true;
+      let curCols = c.tile_columns;
       statsHtml = openGrid(c.tile_columns)
         + (c.production_today ? tile(c.production_today, L.production, L.today, "prodToday", "chart", "solar") : "")
         + (c.battery_today ? tile(c.battery_today, L.battery_today, L.today, "battToday", "battery", "batt") : "")
@@ -424,11 +456,12 @@ class PvFlowCard extends HTMLElement {
         if (t.section !== undefined) {
           if (inGrid) { statsHtml += "</div>"; inGrid = false; }
           statsHtml += `<div class="info-title">${t.section}</div>`;
-          statsHtml += openGrid(Math.min(4, Math.max(1, num(t.columns) ?? c.tile_columns)));
+          curCols = Math.min(4, Math.max(1, num(t.columns) ?? c.tile_columns));
+          statsHtml += openGrid(curCols);
           inGrid = true;
           return;
         }
-        statsHtml += customTile(t, i);
+        statsHtml += customTile(t, i, Math.min(curCols, Math.max(1, num(t.span) ?? 1)));
       });
       if (inGrid) statsHtml += "</div>";
     }
@@ -667,6 +700,16 @@ class PvFlowCard extends HTMLElement {
           display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
         }
         .stat.two .stat-vals .v2 { text-align: right; }
+        /* entities-list tiles: labelled values in a sub-grid (2 across,
+           3 across, or 2×2 for four) */
+        .stat-grid { display: grid; gap: 8px 12px; margin-top: 2px; }
+        .stat-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .stat-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .stat-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .stat-cell .stat-val { margin-top: 0; }
+        .stat-grid.cols-2 .stat-cell:nth-child(even) { text-align: right; }
+        .stat-grid.cols-3 .stat-cell:nth-child(3n+2) { text-align: center; }
+        .stat-grid.cols-3 .stat-cell:nth-child(3n) { text-align: right; }
 
         /* ---- info list (compact label/value rows) ---- */
         .info {
@@ -1128,6 +1171,20 @@ class PvFlowCard extends HTMLElement {
 
     // custom tiles
     c.tiles.forEach((t, i) => {
+      if (t._ents) {
+        let tileEl = null;
+        t._ents.forEach((e, j) => {
+          const cell = this.shadowRoot.getElementById(`ctile${i}_${j}`);
+          if (!cell) return;
+          cell.innerHTML = this._fmtByFormat(e);
+          if (!tileEl) tileEl = cell.closest(".stat");
+        });
+        if (tileEl) {
+          const st = this._state(t._ents[0].entity);
+          tileEl.classList.toggle("flash", isAlert(t, st && st.state));
+        }
+        return;
+      }
       const el = this.shadowRoot.getElementById(`ctile${i}`);
       if (!el) return;
       el.innerHTML = this._fmtByFormat(t);
