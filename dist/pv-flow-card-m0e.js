@@ -18,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.26.0";
+const CARD_VERSION = "1.26.1";
 const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
@@ -655,6 +655,9 @@ class PvFlowCard extends HTMLElement {
           font-weight: 800; letter-spacing: 0.01em; font-variant-numeric: tabular-nums;
         }
         .node-sub { font-size: 10px; font-size: clamp(10px, 3cqw, 12px); color: var(--gw-dim); }
+        /* the sub line is already small — render units at full size so
+           "2.82 kWh" matches the battery's plain-text "7.65 kWh" */
+        .node-sub .u { font-size: inherit; font-weight: inherit; margin-left: 3px; }
         .node-label {
           font-size: 12px; font-size: clamp(11px, 3.4cqw, 13px);
           color: var(--gw-dim); letter-spacing: 0.04em; white-space: nowrap;
