@@ -18,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.25.0";
+const CARD_VERSION = "1.26.0";
 const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
@@ -106,6 +106,20 @@ const fmtEta = (hours) => {
   if (!isFinite(hours) || hours <= 0 || hours > 24) return "";
   const t = new Date(Math.round((Date.now() + hours * 3600000) / 300000) * 300000);
   return t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+};
+
+// colour-threshold rules: [{above|below: n, color} | {state: "TEXT", color}],
+// checked top-to-bottom, first match wins; null = no match (default colour)
+const threshColor = (rules, st) => {
+  if (!Array.isArray(rules) || !st) return null;
+  const v = num(st.state);
+  for (const r of rules) {
+    if (!r || !r.color) continue;
+    if (r.state !== undefined && String(st.state).toLowerCase() === String(r.state).toLowerCase()) return r.color;
+    if (r.above !== undefined && v !== null && v > num(r.above)) return r.color;
+    if (r.below !== undefined && v !== null && v < num(r.below)) return r.color;
+  }
+  return null;
 };
 
 // quantize animation duration so we don't restart the dot every update
@@ -1190,6 +1204,7 @@ class PvFlowCard extends HTMLElement {
           const cell = this.shadowRoot.getElementById(`ctile${i}_${j}`);
           if (!cell) return;
           cell.innerHTML = this._fmtByFormat(e);
+          cell.style.color = threshColor(e.thresholds, this._state(e.entity)) || "";
           if (!tileEl) tileEl = cell.closest(".stat");
         });
         if (tileEl) {
@@ -1201,9 +1216,13 @@ class PvFlowCard extends HTMLElement {
       const el = this.shadowRoot.getElementById(`ctile${i}`);
       if (!el) return;
       el.innerHTML = this._fmtByFormat(t);
-      const el2 = this.shadowRoot.getElementById(`ctile2${i}`);
-      if (el2) el2.innerHTML = this._fmtState(t.entity2, num(t.precision2));
       const st = this._state(t.entity);
+      el.style.color = threshColor(t.thresholds, st) || "";
+      const el2 = this.shadowRoot.getElementById(`ctile2${i}`);
+      if (el2) {
+        el2.innerHTML = this._fmtState(t.entity2, num(t.precision2));
+        el2.style.color = threshColor(t.thresholds2, this._state(t.entity2)) || "";
+      }
       el.parentElement.classList.toggle("flash", isAlert(t, st && st.state));
     });
 
@@ -1213,6 +1232,8 @@ class PvFlowCard extends HTMLElement {
       if (!el) return;
       el.innerHTML = this._fmtByFormat(t);
       const st = this._state(t.entity);
+      // threshold colour wins while matched, else the row's configured colour
+      el.style.color = threshColor(t.thresholds, st) || t.color || "";
       el.parentElement.classList.toggle("flash", isAlert(t, st && st.state));
     });
 

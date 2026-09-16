@@ -152,12 +152,14 @@
         { entity: E.pv1, name: "PV", max: 6600 },
       ],
       tiles: [
-        { entity: E.ups, name: "UPS", sub: "Load", icon: "bolt", color: "#5aa9e6", entity2: E.acv, name2: "AC" },
+        { entity: E.ups, name: "UPS", sub: "Load", icon: "bolt", color: "#5aa9e6",
+          thresholds: [{ above: 16, color: "#ff6b6b" }],
+          entity2: E.acv, name2: "AC" },
         { section: "Money" },
         { entity: E.earned, name: "Sold", sub: "Today", icon: "grid", color: "#35d49a" },
         { entity: E.spent, name: "Bought", sub: "Today", icon: "grid", color: "#ff6b6b" },
         { name: "Savings", icon: "sun", color: "#35d49a", span: 2, entities: [
-          { entity: E.savT, name: "Today" },
+          { entity: E.savT, name: "Today", thresholds: [{ below: 1, color: "#ffb648" }] },
           { entity: E.savY, name: "Yesterday" },
           { entity: E.savM, name: "Month" },
           { entity: E.savYr, name: "Year" },
@@ -169,7 +171,8 @@
         { entity: E.acv, name: "AC In", icon: "bolt" },
         { entity: E.ttg, name: "Time Left", format: "duration", icon: "clock", color: "#35d49a" },
         { entity: E.alarms, name: "Alarms", ok_states: ["OK"], icon: "bell" },
-        { entity: E.soc, name: "Battery SOC", icon: "battery" },
+        { entity: E.soc, name: "Battery SOC", icon: "battery",
+          thresholds: [{ below: 20, color: "#ff6b6b" }] },
       ],
       buttons: [{
         entity: E.setpoint,

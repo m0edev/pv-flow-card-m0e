@@ -241,6 +241,12 @@ tiles:
     alert_states: [ALARM]   # flash red while state matches...
     ok_states: [OK]         # ...or while it does NOT match these
     span: 2              # optional: tile takes this many grid columns
+    thresholds:          # optional: colour the value by rules —
+      - above: 40        #   numeric above/below, or state: TEXT (exact,
+        color: "#ff6b6b" #   case-insensitive); checked top-to-bottom,
+      - below: 0         #   first match wins, no match = default colour
+        color: "#35d49a"
+    thresholds2: [...]   # same, for entity2's value
 ```
 
 Values auto-format by the sensor's unit: `W`/`kW`, `Wh`/`kWh`, `%`, prices
@@ -251,8 +257,8 @@ more-info; tapping the second value opens `entity2`'s.
 
 For more than two values, give a tile an `entities:` list instead of
 `entity`/`entity2` — one header, up to 4 labelled values (2 side by side,
-3 across, 4 as a 2×2). Each item takes its own `name`, `precision` and
-`format`, and taps to its own more-info. Pairs well with `span:` for a
+3 across, 4 as a 2×2). Each item takes its own `name`, `precision`,
+`format` and `thresholds`, and taps to its own more-info. Pairs well with `span:` for a
 full-width tile:
 
 ```yaml
@@ -282,6 +288,9 @@ info:
     format: duration     # duration | datetime | time
     precision: 2         # optional: show N decimals instead of unit formatting
     ok_states: [OK]      # same alert flashing as tiles
+    thresholds:          # same value-colour rules as tiles; overrides the
+      - below: 20        # row's `color` while a rule matches
+        color: "#ff6b6b"
 ```
 
 Rows use the same unit formatting as tiles and open more-info on tap. Lay
