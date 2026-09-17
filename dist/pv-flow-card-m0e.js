@@ -18,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.26.2";
+const CARD_VERSION = "1.27.0";
 const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
@@ -110,14 +110,14 @@ const fmtEta = (hours) => {
 
 // colour-threshold rules: [{above|below: n, color} | {state: "TEXT", color}],
 // checked top-to-bottom, first match wins; null = no match (default colour)
-const threshColor = (rules, st) => {
+const threshRule = (rules, st) => {
   if (!Array.isArray(rules) || !st) return null;
   const v = num(st.state);
   for (const r of rules) {
     if (!r || !r.color) continue;
-    if (r.state !== undefined && String(st.state).toLowerCase() === String(r.state).toLowerCase()) return r.color;
-    if (r.above !== undefined && v !== null && v > num(r.above)) return r.color;
-    if (r.below !== undefined && v !== null && v < num(r.below)) return r.color;
+    if (r.state !== undefined && String(st.state).toLowerCase() === String(r.state).toLowerCase()) return r;
+    if (r.above !== undefined && v !== null && v > num(r.above)) return r;
+    if (r.below !== undefined && v !== null && v < num(r.below)) return r;
   }
   return null;
 };
@@ -275,6 +275,7 @@ class PvFlowCard extends HTMLElement {
       show_separator: config.show_separator !== false,
       layout: ["tall", "wide", "auto"].includes(config.layout) ? config.layout : "auto",
       low_fx: !!config.low_fx,
+      mono: !!(config.mono || config.greyscale || config.grayscale),
       flow_threshold: Math.max(0, num(config.flow_threshold) ?? FLOW_THRESHOLD_W),
       info_title: config.info_title || "",
     };
@@ -379,6 +380,17 @@ class PvFlowCard extends HTMLElement {
       return st ? fmtDT(st.state, t.format === "time") : "—";
     }
     return this._fmtState(t.entity, num(t.precision));
+  }
+
+  // set a value element's threshold colour; in mono mode a matched rule
+  // also appends a direction glyph, since the colour won't read in greyscale
+  _applyThresh(el, rules, st, fallback = "") {
+    const rule = threshRule(rules, st);
+    el.style.color = (rule && rule.color) || fallback;
+    if (rule && this._config.mono) {
+      const ch = rule.above !== undefined ? "▲" : rule.below !== undefined ? "▼" : "●";
+      el.insertAdjacentHTML("beforeend", `<span class="mth">${ch}</span>`);
+    }
   }
 
   _moreInfo(entityId) {
@@ -619,6 +631,23 @@ class PvFlowCard extends HTMLElement {
         .dotv.d-batt { background: var(--gw-batt); }
         .dotv.d-grid { background: var(--gw-grid); }
 
+        /* mono / greyscale mode: for screens rendered in greyscale, carry
+           state in luminance and shape instead of hue — near-white actives,
+           thicker wires and rings, dark-ringed dots. Threshold matches get
+           a glyph (see .mth) since their colour cue is invisible. */
+        .mono { --gw-solar: #f2f4f8; --gw-batt: #f2f4f8; --gw-grid: #f2f4f8; --gw-house: #f2f4f8; }
+        .mono .lines path.on-solar, .mono .lines path.on-batt, .mono .lines path.on-grid {
+          stroke: rgba(242, 244, 248, 0.8); stroke-width: 3;
+        }
+        .mono .dotv {
+          width: 11px; height: 11px; left: -5.5px; top: -5.5px;
+          box-shadow: 0 0 0 2.5px rgba(0, 0, 0, 0.6);
+        }
+        .mono .soc-ring .arc { stroke-width: 5; }
+        .mono .node.active-solar .bubble, .mono .node.active-grid .bubble,
+        .mono .node.active-house .bubble { border-width: 3px; }
+        .mth { font-size: 0.62em; font-weight: 800; margin-left: 4px; vertical-align: middle; }
+
         /* the node box is exactly the bubble, so translate(-50%,-50%) puts the
            circle centre precisely on the path endpoints; labels hang outside */
         .node {
@@ -832,7 +861,7 @@ class PvFlowCard extends HTMLElement {
         .switch.unavail { opacity: 0.4; pointer-events: none; }
       </style>
 
-      <div class="card layout-${c.layout}${c.low_fx ? " fx-off" : ""}">
+      <div class="card layout-${c.layout}${c.low_fx ? " fx-off" : ""}${c.mono ? " mono" : ""}">
         <div class="header">
           <span class="title">${c.name}</span>
           <span class="updated" id="updated"></span>
@@ -1210,7 +1239,7 @@ class PvFlowCard extends HTMLElement {
           const cell = this.shadowRoot.getElementById(`ctile${i}_${j}`);
           if (!cell) return;
           cell.innerHTML = this._fmtByFormat(e);
-          cell.style.color = threshColor(e.thresholds, this._state(e.entity)) || "";
+          this._applyThresh(cell, e.thresholds, this._state(e.entity));
           if (!tileEl) tileEl = cell.closest(".stat");
         });
         if (tileEl) {
@@ -1223,11 +1252,11 @@ class PvFlowCard extends HTMLElement {
       if (!el) return;
       el.innerHTML = this._fmtByFormat(t);
       const st = this._state(t.entity);
-      el.style.color = threshColor(t.thresholds, st) || "";
+      this._applyThresh(el, t.thresholds, st);
       const el2 = this.shadowRoot.getElementById(`ctile2${i}`);
       if (el2) {
         el2.innerHTML = this._fmtState(t.entity2, num(t.precision2));
-        el2.style.color = threshColor(t.thresholds2, this._state(t.entity2)) || "";
+        this._applyThresh(el2, t.thresholds2, this._state(t.entity2));
       }
       el.parentElement.classList.toggle("flash", isAlert(t, st && st.state));
     });
@@ -1239,7 +1268,7 @@ class PvFlowCard extends HTMLElement {
       el.innerHTML = this._fmtByFormat(t);
       const st = this._state(t.entity);
       // threshold colour wins while matched, else the row's configured colour
-      el.style.color = threshColor(t.thresholds, st) || t.color || "";
+      this._applyThresh(el, t.thresholds, st, t.color || "");
       el.parentElement.classList.toggle("flash", isAlert(t, st && st.state));
     });
 

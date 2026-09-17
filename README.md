@@ -180,6 +180,7 @@ switches:
 | `layout` | `auto` | `auto` = flow beside the tiles when the card is wider than ~620 px (landscape tablet), stacked when narrow. `wide` / `tall` force it |
 | `flow_threshold` | `25` | Watts below which a flow counts as zero — gates dot animation, node glows, import/export and charging labels. Raise it to hide meter-noise dribbles, lower it if tiny real flows matter |
 | `low_fx` | `false` | Drop glows, pulses and transitions for weak tablet GPUs; flow dots keep animating |
+| `mono` | `false` | Greyscale-friendly mode for phones rendered in greyscale (aliases: `greyscale`, `grayscale`). State is carried by luminance and shape instead of hue: active wires go near-white and thicker, rings thicken, dots get a dark outline, and a matched `thresholds` rule appends a ▲ / ▼ / ● glyph to the value since its colour cue is invisible. Alert flashing and text labels already survive greyscale unchanged |
 | `battery_capacity_kwh` | — | Usable pack size. Enables the kWh readout in the SOC ring and the time-to-full / time-to-empty estimate |
 | `battery_min_soc` | `0` | Discharge floor (%); time-to-empty counts down to this |
 | `soc_precision` | `0` | Decimal places for the SOC readout (0–2) |
@@ -287,7 +288,7 @@ info:
     color: "#35d49a"     # optional; tints icon and value
     format: duration     # duration | datetime | time
     precision: 2         # optional: show N decimals instead of unit formatting
-    ok_states: [OK]      # same alert flashing as tiles
+    ok_states: [OK]      # same alert flashing as tiles (mono note below)
     thresholds:          # same value-colour rules as tiles; overrides the
       - below: 20        # row's `color` while a rule matches
         color: "#ff6b6b"
