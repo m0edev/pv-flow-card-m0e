@@ -18,7 +18,7 @@
  * existing b2500d config can be dropped in with only the `type` changed.
  */
 
-const CARD_VERSION = "1.26.1";
+const CARD_VERSION = "1.26.2";
 const FLOW_THRESHOLD_W = 25; // default; override with flow_threshold: in config
 
 /* ---------------------------------------------------------------- helpers */
@@ -1094,13 +1094,16 @@ class PvFlowCard extends HTMLElement {
     const gridExport = Math.max(0, gridRaw);
     const gridImport = Math.max(0, -gridRaw);
 
-    // split flows
+    // split flows — grid legs are clamped to the measured grid power, so
+    // sensor mismatch between pv/battery/house (losses, sampling skew)
+    // can't invent an export/import flow the grid sensor doesn't see
     const solarToBatt = Math.min(pv, battCharge);
-    const gridToBatt = Math.max(0, battCharge - solarToBatt);
     const solarToHome = Math.min(pv - solarToBatt, house);
-    const solarToGrid = Math.max(0, pv - solarToBatt - solarToHome);
+    const solarToGrid = Math.min(Math.max(0, pv - solarToBatt - solarToHome), gridExport);
     const battToHome = Math.min(battDischarge, Math.max(0, house - solarToHome));
-    const gridToHome = Math.max(0, house - solarToHome - battToHome);
+    const gridToBatt = Math.min(Math.max(0, battCharge - solarToBatt), gridImport);
+    const gridToHome = Math.min(Math.max(0, house - solarToHome - battToHome),
+      Math.max(0, gridImport - gridToBatt));
 
     this._setFlow("solar-home", solarToHome);
     this._setFlow("solar-batt", solarToBatt);
